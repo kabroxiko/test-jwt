@@ -1,0 +1,66 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: server-api
+  profiles:
+    active: kubernetes
+
+# JWE Configuration
+jwe:
+  server:
+    private-key: ${JWE_SERVER_PRIVATE_KEY:}
+    public-key: ${JWE_SERVER_PUBLIC_KEY:}
+  client:
+    public-key: ${JWE_CLIENT_PUBLIC_KEY:}
+
+# Logging Configuration
+logging:
+  level:
+    com.example.server: INFO
+    com.nimbusds: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management and Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+---
+# Development Profile
+spring:
+  config:
+    activate:
+      on-profile: development
+
+logging:
+  level:
+    com.example.server: DEBUG
+    com.nimbusds: DEBUG
+
+---
+# Kubernetes Profile
+spring:
+  config:
+    activate:
+      on-profile: kubernetes
+
+# Additional Kubernetes specific settings
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true

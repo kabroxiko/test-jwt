@@ -1,0 +1,158 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-api
+  namespace: jwt-demo
+  labels:
+    app: client-api
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: client-api
+  template:
+    metadata:
+      labels:
+        app: client-api
+        version: v1
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: client-api
+        image: docker.io/library/client-api:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: SERVER_API_URL
+          value: "http://server-api:8081"
+        - name: JWE_CLIENT_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: jwe-keys
+              key: client-private-key
+        - name: JWE_CLIENT_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: jwe-keys
+              key: client-public-key
+        - name: JWE_SERVER_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: jwe-keys
+              key: server-public-key
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          readOnlyRootFilesystem: false
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      restartPolicy: Always
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: server-api
+  namespace: jwt-demo
+  labels:
+    app: server-api
+    version: v1
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: server-api
+  template:
+    metadata:
+      labels:
+        app: server-api
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - name: server-api
+        image: docker.io/library/server-api:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8081
+          name: http
+          protocol: TCP
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "kubernetes"
+        - name: JWE_SERVER_PRIVATE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: jwe-keys
+              key: server-private-key
+        - name: JWE_SERVER_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: jwe-keys
+              key: server-public-key
+        - name: JWE_CLIENT_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: jwe-keys
+              key: client-public-key
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8081
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8081
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          readOnlyRootFilesystem: false
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      restartPolicy: Always

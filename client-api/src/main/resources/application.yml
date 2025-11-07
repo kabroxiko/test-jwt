@@ -1,0 +1,80 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: client-api
+  profiles:
+    active: kubernetes
+
+# Server API Configuration
+server-api:
+  url: ${SERVER_API_URL:http://server-api:8081}
+  process:
+    endpoint: /api/process
+  health:
+    endpoint: /api/health
+
+# JWE Configuration
+jwe:
+  client:
+    private-key: ${JWE_CLIENT_PRIVATE_KEY:}
+    public-key: ${JWE_CLIENT_PUBLIC_KEY:}
+  server:
+    public-key: ${JWE_SERVER_PUBLIC_KEY:}
+
+# Logging Configuration
+logging:
+  level:
+    com.example.client: INFO
+    com.nimbusds: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+
+# Management and Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+---
+# Development Profile
+spring:
+  config:
+    activate:
+      on-profile: development
+
+server-api:
+  url: http://localhost:8081
+
+logging:
+  level:
+    com.example.client: DEBUG
+    com.nimbusds: DEBUG
+
+---
+# Kubernetes Profile
+spring:
+  config:
+    activate:
+      on-profile: kubernetes
+
+server-api:
+  url: http://server-api.default.svc.cluster.local:8081
+
+# Additional Kubernetes specific settings
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true

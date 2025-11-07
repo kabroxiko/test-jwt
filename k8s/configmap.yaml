@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: client-api-config
+  namespace: jwt-demo
+  labels:
+    app: client-api
+data:
+  application.yml: |
+    server:
+      port: 8080
+    spring:
+      application:
+        name: client-api
+      profiles:
+        active: kubernetes
+    server-api:
+      url: http://server-api:8081
+      process:
+        endpoint: /api/process
+      health:
+        endpoint: /api/health
+    logging:
+      level:
+        com.example.client: INFO
+        com.nimbusds: WARN
+      pattern:
+        console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: health,info,metrics
+      endpoint:
+        health:
+          show-details: always
+          probes:
+            enabled: true
+      health:
+        livenessstate:
+          enabled: true
+        readinessstate:
+          enabled: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: server-api-config
+  namespace: jwt-demo
+  labels:
+    app: server-api
+data:
+  application.yml: |
+    server:
+      port: 8081
+    spring:
+      application:
+        name: server-api
+      profiles:
+        active: kubernetes
+    logging:
+      level:
+        com.example.server: INFO
+        com.nimbusds: WARN
+      pattern:
+        console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    management:
+      endpoints:
+        web:
+          exposure:
+            include: health,info,metrics
+      endpoint:
+        health:
+          show-details: always
+          probes:
+            enabled: true
+      health:
+        livenessstate:
+          enabled: true
+        readinessstate:
+          enabled: true
